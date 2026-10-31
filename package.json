@@ -1,0 +1,20 @@
+{
+  "name": "payguard-ai",
+  "version": "1.0.0",
+  "description": "Zero-Trust Financial Sentinel & Autonomous Spending Circuit-Breaker for AI Agents using PayPal REST v2",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node test/payguard.test.js",
+    "demo": "node examples/agent_checkout_simulation.js"
+  },
+  "keywords": [
+    "paypal",
+    "ai-agents",
+    "idempotency",
+    "circuit-breaker",
+    "fintech-security",
+    "autonomous-commerce"
+  ],
+  "author": "Usman Bamidele",
+  "license": "MIT"
+}
