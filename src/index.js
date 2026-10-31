@@ -5,6 +5,7 @@ const { IdempotencyEngine } = require('./idempotency');
 const { CircuitBreaker } = require('./circuit_breaker');
 const { VendorShield } = require('./vendor_shield');
 const { PayPalGateway } = require('./paypal_gateway');
+const { scoreTransaction } = require('./risk_engine');
 
 /**
  * PayGuard: Zero-Trust Autonomous Commerce Sentinel for AI Agents
@@ -70,7 +71,26 @@ class PayGuard {
         throw new Error(`[PayGuard Circuit Breaker Trip]: ${breakerCheck.reason}`);
       }
 
-      // 4. Compute Cryptographic Idempotency Fingerprint
+      // 4. ML Fraud Risk Score (Python ML Risk Engine)
+      const riskAssessment = await scoreTransaction(intent);
+      logEntry.mlRiskScore = riskAssessment.risk_score;
+      logEntry.mlRiskLevel = riskAssessment.risk_level;
+
+      if (riskAssessment.recommendation === 'BLOCK') {
+        logEntry.status = 'BLOCKED_BY_ML_RISK_ENGINE';
+        logEntry.reason = `ML Risk Score: ${riskAssessment.risk_score}/100 (${riskAssessment.risk_level}) - ${riskAssessment.top_factors[0]}`;
+        this.auditLog.push(logEntry);
+        throw new Error(`[PayGuard ML Block]: Risk score ${riskAssessment.risk_score}/100 - ${riskAssessment.top_factors.join(', ')}`);
+      }
+
+      if (riskAssessment.recommendation === 'REQUIRE_HUMAN_APPROVAL' && !humanApprovalToken) {
+        logEntry.status = 'ML_FLAGGED_NEEDS_APPROVAL';
+        logEntry.reason = `ML flagged HIGH risk (${riskAssessment.risk_score}/100): ${riskAssessment.top_factors[0]}`;
+        this.auditLog.push(logEntry);
+        throw new Error(`[PayGuard ML Flag]: High risk score ${riskAssessment.risk_score}/100 - human approval required. Factors: ${riskAssessment.top_factors.join(', ')}`);
+      }
+
+      // 5. Compute Cryptographic Idempotency Fingerprint
       const idempotencyKey = intent.idempotencyKey || this.idempotency.computeFingerprint(intent);
 
       // 5. Atomic Idempotency Gate
@@ -108,6 +128,8 @@ class PayGuard {
         idempotencyKey,
         amountFormatted: `$${this.currency.toDollarString(intent.totalCents)}`,
         approvalUrl: (orderResult.links || []).find(l => l.rel === 'approve')?.href,
+        mlRiskScore: riskAssessment.risk_score,
+        mlRiskLevel: riskAssessment.risk_level,
         paypalOrder: orderResult
       };
 
