@@ -7,11 +7,12 @@
 
 class CircuitBreaker {
   constructor(config = {}) {
-    this.maxTransactionCents = config.maxTransactionCents || 5000; // $50 default max per order
-    this.dailyBudgetLimitCents = config.dailyBudgetLimitCents || 20000; // $200 default daily ceiling
-    this.maxVelocityPerMinute = config.maxVelocityPerMinute || 4; // Max 4 orders/min
-    
+    this.maxTransactionCents = config.perTransactionLimitCents || config.maxTransactionCents || 5000;
+    this.dailyBudgetLimitCents = config.dailyLimitCents || config.dailyBudgetLimitCents || 20000;
+    this.maxVelocityPerMinute = config.maxVelocityPerMinute || 4;
+
     this.transactions = []; // { timestamp, amountCents }
+    this.approvedTokens = new Set(); // Manager-approved tokens (used once)
   }
 
   /**

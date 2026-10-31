@@ -93,7 +93,7 @@ class PayPalGateway {
             quantity: String(i.quantity),
             unit_amount: {
               currency_code: payload.currency || 'USD',
-              value: Currency.toDollarString(i.unitAmountCents)
+              value: Currency.toDollarString(i.unitAmountCents || i.unitCents)
             }
           }))
         }

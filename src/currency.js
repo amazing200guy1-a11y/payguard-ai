@@ -53,13 +53,14 @@ class Currency {
   static validateLineItems(items, totalCents) {
     if (!Array.isArray(items)) throw new TypeError('Items must be an array');
     const computedTotal = items.reduce((acc, item) => {
-      if (!Number.isInteger(item.unitAmountCents) || item.unitAmountCents < 0) {
-        throw new RangeError(`Invalid unit amount: ${item.unitAmountCents}`);
+      const unitAmount = item.unitAmountCents ?? item.unitCents;
+      if (!Number.isInteger(unitAmount) || unitAmount < 0) {
+        throw new RangeError(`Invalid unit amount: ${unitAmount}`);
       }
       if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
         throw new RangeError(`Invalid quantity: ${item.quantity}`);
       }
-      return acc + (item.unitAmountCents * item.quantity);
+      return acc + (unitAmount * item.quantity);
     }, 0);
 
     return computedTotal === totalCents;

@@ -17,7 +17,24 @@ const INJECTION_PATTERNS = [
 
 class VendorShield {
   constructor(config = {}) {
-    this.allowedDomains = new Set(config.allowedDomains || ['paypal.com', 'store.example.com', 'acme-corp.com']);
+    const defaultAllowedDomains = [
+      // PayPal
+      'paypal.com',
+      // Subscriptions
+      'netflix.com', 'spotify.com', 'starlink.com', 'youtube.com', 'hulu.com',
+      'disneyplus.com', 'openai.com', 'github.com', 'notion.so', 'figma.com',
+      'dropbox.com', 'adobe.com', 'microsoft.com', 'apple.com', 'icloud.com',
+      // Shopping
+      'amazon.com', 'sony.com', 'samsung.com', 'keychron.com', 'logitech.com',
+      'dell.com', 'bestbuy.com',
+      // Transport
+      'uber.com', 'bolt.eu', 'lyft.com',
+      // Bills & Tax
+      'utility.com', 'isp.com', 'irs.gov',
+      // Dev/demo
+      'store.example.com', 'acme-corp.com', 'merchant.com',
+    ];
+    this.allowedDomains = new Set(config.allowedDomains || defaultAllowedDomains);
     this.enforceStrictWhitelist = config.enforceStrictWhitelist !== false;
   }
 
