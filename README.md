@@ -5,10 +5,14 @@
 
 [![PayPal REST v2](https://img.shields.io/badge/PayPal-REST%20v2%20Orders-0070ba?logo=paypal)](https://developer.paypal.com/docs/api/orders/v2/)
 [![MCP Server](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-a855f7?logo=anthropic)](https://modelcontextprotocol.io/)
+[![Python ML Engine](https://img.shields.io/badge/ML%20Risk%20Engine-Python%203.12%20%7C%20numpy-3776ab?logo=python)](risk_engine/)
 [![Tests Passing](https://img.shields.io/badge/Security%20Audit-100%25%20Passing-10b981)]()
+[![Live Demo](https://img.shields.io/badge/Live%20Dashboard-GitHub%20Pages-38bdf8)](https://amazing200guy1-a11y.github.io/payguard-ai/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-38bdf8)](LICENSE)
 
-> *When autonomous AI agents are authorized to spend real money, standard web security is obsolete. PayGuard provides an institutional, fail-closed financial firewall between LLM agents and the PayPal checkout network.*
+> *When autonomous AI agents are authorized to spend real money, standard web security is obsolete. PayGuard provides an institutional, fail-closed financial firewall and ML risk engine between LLM agents and the PayPal checkout network.*
+
+**🌐 Interactive Web HUD:** [https://amazing200guy1-a11y.github.io/payguard-ai/](https://amazing200guy1-a11y.github.io/payguard-ai/)
 
 ---
 
@@ -25,55 +29,67 @@ As developers connect autonomous agents (Claude Desktop, LangChain, AutoGen, Cre
 
 ## 🛡️ The Solution: PayGuard Architecture
 
-PayGuard sits directly between your AI agent's tool execution runtime and the **PayPal REST v2 Orders API**, enforcing five non-negotiable financial invariants:
+PayGuard sits directly between your AI agent's tool execution runtime and the **PayPal REST v2 Orders API**, enforcing five non-negotiable financial invariants plus an ML risk engine:
 
 ```
-┌─────────────────────────────────┐
-│     Autonomous AI Agent         │
-│  (Claude Desktop / LangChain)   │
-└────────────────┬────────────────┘
-                 │ (Agent Tool Call: paypal_guarded_checkout)
-                 ▼
-┌─────────────────────────────────────────────────────────┐
-│                 PAYGUARD AI SENTINEL                    │
-│                                                         │
-│  1. Strict Minor-Unit Invariant (Cents Integer Math)    │
-│  2. Vendor Shield (Merchant Whitelist & Anti-Injection) │
-│  3. Autonomous Circuit Breaker ($50 Cap & 24h Quota)    │
-│  4. Human-in-the-Loop HMAC Approval Gate (> $50 orders) │
-│  5. Atomic Idempotency Gate (SHA-256 State Lock)        │
-└────────────────┬────────────────────────────────────────┘
-                 │ (Signed Request with PayPal-Request-Id)
-                 ▼
-┌─────────────────────────────────┐
-│     PayPal REST v2 Orders       │
-│  https://api-m.paypal.com/v2/   │
-└─────────────────────────────────┘
+┌────────────────────────────────────────┐
+│        Autonomous AI Agent             │
+│   (Claude / LangChain / CrewAI / NLP)  │
+└───────────────────┬────────────────────┘
+                    │ (Natural Language Intent / Tool Call)
+                    ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   PAYGUARD AI SENTINEL                      │
+│                                                             │
+│  1. Strict Minor-Unit Invariant (Cents Integer Math)        │
+│  2. Vendor Shield (Merchant Whitelist & Anti-Injection)     │
+│  3. Autonomous Circuit Breaker ($150 Cap & $500 Daily Cap)  │
+│  4. Python ML Fraud Risk Engine (0-100 Heuristic Scorer)    │
+│  5. Human-in-the-Loop HMAC Approval Gate (High-Value Items) │
+│  6. Atomic Idempotency Gate (SHA-256 State Lock)            │
+└───────────────────┬─────────────────────────────────────────┘
+                    │ (Signed Request with PayPal-Request-Id)
+                    ▼
+┌────────────────────────────────────────┐
+│        PayPal REST v2 Orders           │
+│     https://api-m.paypal.com/v2/       │
+└────────────────────────────────────────┘
 ```
 
 ---
 
 ## ⚡ Core Pillars
 
-### 1. Model Context Protocol (MCP) Integration
+### 1. Python ML Fraud Risk Engine (`risk_engine/`)
+A dedicated Python ML scoring engine using a calibrated **Gradient Stump Ensemble** (built on pure `numpy` with zero fragile C-compilation dependencies). It evaluates 8 behavioral features:
+- Transaction velocity (runaway loop detector)
+- Time-of-day anomaly scoring (pre-dawn & midnight flags)
+- Amount-to-category baseline divergence
+- Statutory tax authority recognition
+- Output: 0–100 risk score with human-readable diagnostic factors.
+
+### 2. Model Context Protocol (MCP) Integration
 PayGuard natively implements the **Model Context Protocol (MCP)** specification. Any agent in **Claude Desktop** or **Cursor** can mount PayGuard tools via standard JSON-RPC:
 - `paypal_guarded_checkout`: Executes validated, idempotency-protected checkouts.
 - `paypal_check_spending_limits`: Inspects daily quotas, spending velocity, and circuit-breaker health.
 
-### 2. Human-in-the-Loop Approval Gate
-When an agent attempts a high-value purchase exceeding the autonomous limit (e.g. `$50.00`), PayGuard **fails closed**:
-- An atomic `TICKET_XXXX` is generated with a 60-second expiration.
-- Real-time Server-Sent Events (SSE) push the alert to the manager dashboard.
-- A human must grant an HMAC cryptographic approval signature before PayPal authorization occurs.
+### 3. Universal Autonomous Agent (30+ Supported Services)
+PayGuard handles natural language commands across everyday commerce:
+- **Subscriptions:** Netflix, Starlink, Spotify, YouTube Premium, ChatGPT Plus, GitHub Pro, Adobe CC, Disney+, Notion, Figma, Microsoft 365, iCloud
+- **Shopping:** AirPods Pro, MacBook Air M2, iPhone, iPad, Kindle, Sony headphones
+- **Transport & Bills:** Uber, Bolt, Lyft, electricity, water, internet
+- **Statutory Taxes:** Federal tax computation & safe IRS settlement routing
 
-### 3. Atomic Idempotency Gate (`PayPal-Request-Id`)
+### 4. Human-in-the-Loop Approval Gate
+When an agent attempts a high-value purchase exceeding the autonomous limit:
+- An atomic `APPROVE_XXXX` token is generated.
+- A human manager reviews and passes the HMAC approval token back to authorize settlement.
+
+### 5. Atomic Idempotency Gate (`PayPal-Request-Id`)
 Every agent order payload is hashed into a canonical SHA-256 fingerprint. If an erratic agent fires 5 concurrent requests during a network hiccup, PayGuard executes request #1 with PayPal's native `PayPal-Request-Id` idempotency header, while requests #2–5 instantly receive the settled receipt **with zero second charge**.
 
-### 4. Vendor Shield & Anti-Prompt-Injection Scanner
+### 6. Vendor Shield & Anti-Prompt-Injection Scanner
 Scans transaction memos, items, and payloads for prompt injection signatures (`ignore previous instructions`, `drain funds`, `transfer balance`) and strictly verifies the payee against an approved merchant domain whitelist.
-
-### 5. Strict Minor-Currency Math (CWE-682 Defense)
-Calculates all transactions in exact integer minor units (cents / kobo), eliminating the IEEE-754 precision loss that causes penny discrepancies in automated commerce.
 
 ---
 
@@ -86,16 +102,22 @@ cd payguard-ai
 npm test
 ```
 
-### 2. Run the Autonomous Commerce Simulation
+### 2. Validate the Python ML Risk Engine
 ```bash
-npm run demo
+python risk_engine/train.py
+```
+*Validates 12 threat scenarios with 100% accuracy on attack vs legit classification.*
+
+### 3. Run the Universal Autonomous Agent Simulation (10 Scenarios)
+```bash
+node examples/universal_agent_demo.js
 ```
 
-### 3. Launch the Live Gateway & Human-in-the-Loop Server
+### 4. Launch the Live Gateway & Human-in-the-Loop Server
 ```bash
 npm start
 ```
-Open **`http://localhost:3000`** to view the live Security HUD.
+Open **`http://localhost:3000`** or test online at [https://amazing200guy1-a11y.github.io/payguard-ai/](https://amazing200guy1-a11y.github.io/payguard-ai/).
 
 ---
 
@@ -119,7 +141,7 @@ Add PayGuard to your Claude Desktop configuration (`claude_desktop_config.json`)
 ```
 
 Now ask Claude:  
-> *"Check our remaining PayPal spending limit and order 1 pack of thermal paper from store.example.com for $24.50."*  
+> *"Check our remaining PayPal spending limit and subscribe to Netflix Basic."*  
 Claude will invoke `paypal_check_spending_limits` and `paypal_guarded_checkout` under full PayGuard financial protection!
 
 ---
