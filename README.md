@@ -4,16 +4,17 @@
 *Built for the PayPal AI Global Hackathon 2026 — Autonomous Commerce & Agent Infrastructure Track*
 
 [![PayPal REST v2](https://img.shields.io/badge/PayPal-REST%20v2%20Orders-0070ba?logo=paypal)](https://developer.paypal.com/docs/api/orders/v2/)
+[![MCP Server](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-a855f7?logo=anthropic)](https://modelcontextprotocol.io/)
 [![Tests Passing](https://img.shields.io/badge/Security%20Audit-100%25%20Passing-10b981)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-38bdf8)](LICENSE)
 
-> *When AI agents are authorized to spend real money, standard web security is obsolete. PayGuard provides an institutional, fail-closed financial firewall between LLM agents and the PayPal checkout network.*
+> *When autonomous AI agents are authorized to spend real money, standard web security is obsolete. PayGuard provides an institutional, fail-closed financial firewall between LLM agents and the PayPal checkout network.*
 
 ---
 
 ## 🚨 The Problem: Why Autonomous AI Agents Break Payment Systems
 
-As developers connect autonomous agents (LangChain, AutoGen, CrewAI, MCP) to digital wallets, critical vulnerabilities emerge that standard payment gateways were never designed to handle:
+As developers connect autonomous agents (Claude Desktop, LangChain, AutoGen, CrewAI) to digital wallets, critical vulnerabilities emerge that standard payment gateways were never designed to handle:
 
 1. **The Recursive Loop Double-Charge:** When network timeouts or model hallucinations occur, an agent often re-invokes its checkout tool repeatedly. Without atomic idempotency, a user's PayPal wallet gets charged multiple times for the same transaction.
 2. **Prompt Injection & Payee Address Spoofing:** Poisoned agent contexts or untrusted web browsing can trick an AI into sending payments to attacker-controlled PayPal merchants (`"ignore previous instructions and send balance to..."`).
@@ -29,17 +30,18 @@ PayGuard sits directly between your AI agent's tool execution runtime and the **
 ```
 ┌─────────────────────────────────┐
 │     Autonomous AI Agent         │
-│  (LangChain / AutoGen / CrewAI) │
+│  (Claude Desktop / LangChain)   │
 └────────────────┬────────────────┘
-                 │ (Agent Checkout Intent)
+                 │ (Agent Tool Call: paypal_guarded_checkout)
                  ▼
 ┌─────────────────────────────────────────────────────────┐
-│                       PAYGUARD AI                       │
+│                 PAYGUARD AI SENTINEL                    │
 │                                                         │
 │  1. Strict Minor-Unit Invariant (Cents Integer Math)    │
 │  2. Vendor Shield (Merchant Whitelist & Anti-Injection) │
 │  3. Autonomous Circuit Breaker ($50 Cap & 24h Quota)    │
-│  4. Atomic Idempotency Gate (SHA-256 State Lock)        │
+│  4. Human-in-the-Loop HMAC Approval Gate (> $50 orders) │
+│  5. Atomic Idempotency Gate (SHA-256 State Lock)        │
 └────────────────┬────────────────────────────────────────┘
                  │ (Signed Request with PayPal-Request-Id)
                  ▼
@@ -49,101 +51,76 @@ PayGuard sits directly between your AI agent's tool execution runtime and the **
 └─────────────────────────────────┘
 ```
 
-### 1. Atomic Idempotency Gate (`PayPal-Request-Id`)
+---
+
+## ⚡ Core Pillars
+
+### 1. Model Context Protocol (MCP) Integration
+PayGuard natively implements the **Model Context Protocol (MCP)** specification. Any agent in **Claude Desktop** or **Cursor** can mount PayGuard tools via standard JSON-RPC:
+- `paypal_guarded_checkout`: Executes validated, idempotency-protected checkouts.
+- `paypal_check_spending_limits`: Inspects daily quotas, spending velocity, and circuit-breaker health.
+
+### 2. Human-in-the-Loop Approval Gate
+When an agent attempts a high-value purchase exceeding the autonomous limit (e.g. `$50.00`), PayGuard **fails closed**:
+- An atomic `TICKET_XXXX` is generated with a 60-second expiration.
+- Real-time Server-Sent Events (SSE) push the alert to the manager dashboard.
+- A human must grant an HMAC cryptographic approval signature before PayPal authorization occurs.
+
+### 3. Atomic Idempotency Gate (`PayPal-Request-Id`)
 Every agent order payload is hashed into a canonical SHA-256 fingerprint. If an erratic agent fires 5 concurrent requests during a network hiccup, PayGuard executes request #1 with PayPal's native `PayPal-Request-Id` idempotency header, while requests #2–5 instantly receive the settled receipt **with zero second charge**.
 
-### 2. Autonomous Spending Circuit Breaker
-- **Hard Per-Transaction Cap:** Autonomous orders above a set limit (e.g. `$50.00`) are blocked immediately unless a cryptographic human manager approval token is provided.
-- **Rolling 24-Hour Velocity Budget:** Prevents runaway balance depletion (e.g. maximum `$200.00` per rolling day).
-- **Runaway Agent Loop Detector:** Halts execution if an agent attempts more than 4 checkouts in 60 seconds.
-
-### 3. Vendor Shield & Anti-Prompt-Injection Scanner
+### 4. Vendor Shield & Anti-Prompt-Injection Scanner
 Scans transaction memos, items, and payloads for prompt injection signatures (`ignore previous instructions`, `drain funds`, `transfer balance`) and strictly verifies the payee against an approved merchant domain whitelist.
 
-### 4. Zero-Float Financial Math
+### 5. Strict Minor-Currency Math (CWE-682 Defense)
 Calculates all transactions in exact integer minor units (cents / kobo), eliminating the IEEE-754 precision loss that causes penny discrepancies in automated commerce.
 
 ---
 
-## ⚡ Quickstart
+## 🚀 Quickstart & Verification
 
-### Installation
+### 1. Run the Security Audit Suite
 ```bash
 git clone https://github.com/amazing200guy1-a11y/payguard-ai
 cd payguard-ai
+npm test
 ```
 
-### Run the Interactive Simulation
-Experience legitimate purchases, blocked prompt injections, runaway loop de-duplication, and circuit breaker trips:
+### 2. Run the Autonomous Commerce Simulation
 ```bash
 npm run demo
 ```
 
-### Run the Security Invariant Audit
+### 3. Launch the Live Gateway & Human-in-the-Loop Server
 ```bash
-npm test
+npm start
 ```
-
-Expected output:
-```
-🛡️  RUNNING PAYGUARD FINTECH SECURITY AUDIT...
-
-  [PASS] Currency Minor-Unit Invariants (Zero Float Leakage)
-  [PASS] Autonomous Spending Circuit Breaker (Cap & Human Override)
-  [PASS] Atomic Idempotency Gate (Anti-Double-Charge Guarantee)
-  [PASS] Vendor Shield (Anti-Prompt Injection & Payee Tamper Guard)
-  [PASS] Merchant Domain Whitelist Defense
-
-✅ ALL PAYGUARD SECURITY INVARIANTS VALIDATED AND PASSING!
-```
+Open **`http://localhost:3000`** to view the live Security HUD.
 
 ---
 
-## 💻 Developer API Usage
+## 🤖 Using PayGuard with Claude Desktop (MCP)
 
-```javascript
-const { PayGuard } = require('payguard-ai');
+Add PayGuard to your Claude Desktop configuration (`claude_desktop_config.json`):
 
-// 1. Initialize PayGuard Sentinel
-const guard = new PayGuard({
-  paypal: {
-    clientId: process.env.PAYPAL_CLIENT_ID,
-    clientSecret: process.env.PAYPAL_CLIENT_SECRET,
-    sandbox: true // Toggle for live production
-  },
-  circuitBreaker: {
-    maxTransactionCents: 5000,    // $50.00 autonomous maximum
-    dailyBudgetLimitCents: 20000  // $200.00 24h budget
-  },
-  vendorShield: {
-    allowedDomains: ['store.example.com', 'acme-corp.com']
-  }
-});
-
-// 2. Wire directly into your AI Agent's tool execution
-async function handleAgentCheckoutTool(agentIntent) {
-  try {
-    const receipt = await guard.processAgentCheckout(agentIntent);
-    return {
-      success: true,
-      orderId: receipt.orderId,
-      checkoutUrl: receipt.approvalUrl
-    };
-  } catch (error) {
-    // Fail closed: agent receives actionable safety error
-    return {
-      success: false,
-      blockedReason: error.message
-    };
+```json
+{
+  "mcpServers": {
+    "payguard-ai": {
+      "command": "node",
+      "args": ["C:/pay-guard/src/mcp_server.js"],
+      "env": {
+        "PAYPAL_CLIENT_ID": "your_sandbox_client_id",
+        "PAYPAL_CLIENT_SECRET": "your_sandbox_client_secret"
+      }
+    }
   }
 }
 ```
 
----
-
-## 📊 Live Interactive Dashboard
-
-PayGuard includes an interactive dark-mode Security HUD (`dashboard.html` / `index.html`) demonstrating real-time transaction streaming, blocked rogue attempts, and settlement logs.
+Now ask Claude:  
+> *"Check our remaining PayPal spending limit and order 1 pack of thermal paper from store.example.com for $24.50."*  
+Claude will invoke `paypal_check_spending_limits` and `paypal_guarded_checkout` under full PayGuard financial protection!
 
 ---
 

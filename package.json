@@ -1,19 +1,27 @@
 {
   "name": "payguard-ai",
   "version": "1.0.0",
-  "description": "Zero-Trust Financial Sentinel & Autonomous Spending Circuit-Breaker for AI Agents using PayPal REST v2",
+  "description": "Zero-Trust Financial Sentinel & Autonomous Spending Circuit-Breaker for AI Agents using PayPal REST v2 and MCP",
   "main": "src/index.js",
+  "bin": {
+    "payguard": "src/server.js",
+    "payguard-mcp": "src/mcp_server.js"
+  },
   "scripts": {
+    "start": "node src/server.js",
+    "mcp": "node src/mcp_server.js",
     "test": "node test/payguard.test.js",
     "demo": "node examples/agent_checkout_simulation.js"
   },
   "keywords": [
     "paypal",
+    "mcp",
+    "model-context-protocol",
     "ai-agents",
+    "autonomous-commerce",
     "idempotency",
     "circuit-breaker",
-    "fintech-security",
-    "autonomous-commerce"
+    "fintech-security"
   ],
   "author": "Usman Bamidele",
   "license": "MIT"
